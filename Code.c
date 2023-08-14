@@ -1,110 +1,154 @@
-#include <NewPing.h>
+//Coded By TechLogy Hub 
+// This code is for a OBSTACLE AVOIDING ROBOT
 
-#define ULTRASONIC_SENSOR_TRIG 11
-#define ULTRASONIC_SENSOR_ECHO 12
+#include <LiquidCrystal.h>
+LiquidCrystal lcd(8, 9, 10, 11, 12, 13);
 
-#define MAX_FORWARD_MOTOR_SPEED 75
-#define MAX_MOTOR_TURN_SPEED_ADJUSTMENT 50
+long cm, duration;
+const int echoPin = 7;
+const int trigPin = 6;
 
-#define MIN_DISTANCE 10
-#define MAX_DISTANCE 30
+const int lm1 = 2;
+const int lm2 = 3;
+const int rm1 = 4;
+const int rm2 = 5;
 
-#define IR_SENSOR_RIGHT 2
-#define IR_SENSOR_LEFT 3
-
-//Right motor
-int enableRightMotor=5;
-int rightMotorPin1=7;
-int rightMotorPin2=8;
-
-//Left motor
-int enableLeftMotor=6;
-int leftMotorPin1=9;
-int leftMotorPin2=10;
-
-NewPing mySensor(ULTRASONIC_SENSOR_TRIG, ULTRASONIC_SENSOR_ECHO, 400);
+// Above is the motor driver pin connection. lm1, lm2, rm1 and
+//rm2 are the digital input pins from arduino to the motor driver.
 
 void setup()
 {
-  // put your setup code here, to run once:
-  pinMode(enableRightMotor, OUTPUT);
-  pinMode(rightMotorPin1, OUTPUT);
-  pinMode(rightMotorPin2, OUTPUT);
+  pinMode(lm1, OUTPUT);
+  pinMode(lm2, OUTPUT);
+  pinMode(rm1, OUTPUT);
+  pinMode(rm2, OUTPUT);
+ 
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
   
-  pinMode(enableLeftMotor, OUTPUT);
-  pinMode(leftMotorPin1, OUTPUT);
-  pinMode(leftMotorPin2, OUTPUT);
-
-  pinMode(IR_SENSOR_RIGHT, INPUT);
-  pinMode(IR_SENSOR_LEFT, INPUT);
-  rotateMotor(0,0);   
+  Serial.begin(9600);
+  lcd.begin(16, 2);
 }
-
 
 void loop()
 {
-  int distance = mySensor.ping_cm();
-  int rightIRSensorValue = digitalRead(IR_SENSOR_RIGHT);
-  int leftIRSensorValue = digitalRead(IR_SENSOR_LEFT);
 
-  //NOTE: If IR sensor detects the hand then its value will be LOW else the value will be HIGH
+  // the distance ahead using an ultrasonic sensor
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(5);
+  digitalWrite(trigPin, LOW);
+  duration = pulseIn(echoPin, HIGH);
+
+// converting the time into a distance in Centimetre
   
-  //If right sensor detects hand, then turn right. We increase left motor speed and decrease the right motor speed to turn towards right
-  if (rightIRSensorValue == LOW && leftIRSensorValue == HIGH )
+   cm = duration*0.034/2;
+ 
+  if(cm < 20)
   {
-      rotateMotor(MAX_FORWARD_MOTOR_SPEED - MAX_MOTOR_TURN_SPEED_ADJUSTMENT, MAX_FORWARD_MOTOR_SPEED + MAX_MOTOR_TURN_SPEED_ADJUSTMENT ); 
+    stop_bot();
+    delay(2000);
+   
+    go_back();
+    delay(2000);
+    
+    stop_again();
+    delay(1000);
+   
+    go_left();
+    delay(1000);
   }
-  //If left sensor detects hand, then turn left. We increase right motor speed and decrease the left motor speed to turn towards left
-  else if (rightIRSensorValue == HIGH && leftIRSensorValue == LOW )
-  {
-      rotateMotor(MAX_FORWARD_MOTOR_SPEED + MAX_MOTOR_TURN_SPEED_ADJUSTMENT, MAX_FORWARD_MOTOR_SPEED - MAX_MOTOR_TURN_SPEED_ADJUSTMENT); 
-  }
-  //If distance is between min and max then go straight
-  else if (distance >= MIN_DISTANCE && distance <= MAX_DISTANCE)
-  {
-    rotateMotor(MAX_FORWARD_MOTOR_SPEED, MAX_FORWARD_MOTOR_SPEED);
-  }
-  //stop the motors
-  else 
-  {
-    rotateMotor(0, 0);
-  }
-}
-
-
-void rotateMotor(int rightMotorSpeed, int leftMotorSpeed)
-{
-  if (rightMotorSpeed < 0)
-  {
-    digitalWrite(rightMotorPin1,LOW);
-    digitalWrite(rightMotorPin2,HIGH);    
-  }
-  else if (rightMotorSpeed > 0)
-  {
-    digitalWrite(rightMotorPin1,HIGH);
-    digitalWrite(rightMotorPin2,LOW);      
-  }
+  
   else
   {
-    digitalWrite(rightMotorPin1,LOW);
-    digitalWrite(rightMotorPin2,LOW);      
+    go_straight();
+    delay(1000);
   }
+  
+// For Serial Monitor
+Serial.print("Distance:CM ");  
+Serial.println(cm); 
+  
+}
 
-  if (leftMotorSpeed < 0)
-  {
-    digitalWrite(leftMotorPin1,LOW);
-    digitalWrite(leftMotorPin2,HIGH);    
-  }
-  else if (leftMotorSpeed > 0)
-  {
-    digitalWrite(leftMotorPin1,HIGH);
-    digitalWrite(leftMotorPin2,LOW);      
-  }
-  else 
-  {
-    digitalWrite(leftMotorPin1,LOW);
-    digitalWrite(leftMotorPin2,LOW);      
-  }
-  analogWrite(enableRightMotor, abs(rightMotorSpeed));
-  analogWrite(enableLeftMotor, abs(leftMotorSpeed));    
+//  Here are the functions that are used in the program
+
+void go_straight()
+{
+lcd.setCursor(0,0);
+lcd.print("FOLLOW HUMAN");
+lcd.setCursor(0,1);
+lcd.print("MOVING FORWARD");
+  
+  digitalWrite(lm1,HIGH);
+  digitalWrite(lm2,LOW);
+  digitalWrite(rm1,HIGH);
+  digitalWrite(rm2,LOW);
+}
+void stop_bot()
+{
+lcd.clear(); 
+lcd.setCursor(0,0);
+lcd.print("SOMETHING AHEAD");
+lcd.setCursor(0,1);
+lcd.print("STOP!!");
+  
+  digitalWrite(lm1,LOW);
+  digitalWrite(lm2,LOW);
+  digitalWrite(rm1,LOW);
+  digitalWrite(rm2,LOW);
+}
+void go_back()
+{
+lcd.clear();
+lcd.setCursor(0,0);
+lcd.print("TAKING REVERSE");
+lcd.setCursor(0,1);
+lcd.print(cm);
+  
+  digitalWrite(lm2,HIGH);
+  digitalWrite(lm1,LOW);
+  digitalWrite(rm2,HIGH);
+  digitalWrite(rm1,LOW);
+} 
+
+void stop_again()
+{
+lcd.clear(); 
+lcd.setCursor(0,0);
+lcd.print("BREAK FOR TURN");
+  
+  digitalWrite(lm1,LOW);
+  digitalWrite(lm2,LOW);
+  digitalWrite(rm1,LOW);
+  digitalWrite(rm2,LOW);
+}
+
+void go_left()
+{
+lcd.clear();
+lcd.setCursor(0,0);
+lcd.print("TURNING LEFT");
+lcd.setCursor(0,1);
+lcd.print(cm);
+  
+  digitalWrite(lm1,LOW);
+  digitalWrite(lm2,LOW);
+  digitalWrite(rm1,HIGH);
+  digitalWrite(rm2,LOW);
+}
+
+void go_right()
+{
+lcd.clear();
+lcd.setCursor(0,0);
+lcd.print("TURNING RIGHT");
+lcd.setCursor(0,1);
+lcd.print(cm);
+  
+  digitalWrite(lm1,HIGH);
+  digitalWrite(lm2,LOW);
+  digitalWrite(rm1,LOW);
+  digitalWrite(rm2,LOW);
 }
